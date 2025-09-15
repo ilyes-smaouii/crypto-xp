@@ -1,29 +1,131 @@
+#include "tea_impl.hpp"
+#include "../crypto_helpers.hpp"
+#include <array>
+#include <atomic>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <stdint.h>
+#include <string>
 
 // Code below copied from Wikipedia article, will update it later :
 // https://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm
 // (as of 2025-09-12, 21:24 GMT+2)
+// update : nvm, I don't think there's much to change here
 
-void encrypt (uint32_t v[2], const uint32_t k[4]) {
-  uint32_t v0=v[0], v1=v[1], sum=0, i;           /* set up */
-  uint32_t delta=0x9E3779B9;                     /* a key schedule constant */
-  uint32_t k0=k[0], k1=k[1], k2=k[2], k3=k[3];   /* cache key */
-  for (i=0; i<32; i++) {                         /* basic cycle start */
+void encryptBlockTEA_raw(uint32_t v[2], const uint32_t k[4]) {
+  uint32_t v0 = v[0], v1 = v[1], sum = 0, i; /* set up */
+  uint32_t delta = 0x9E3779B9;               /* a key schedule constant */
+  uint32_t k0 = k[0], k1 = k[1], k2 = k[2], k3 = k[3]; /* cache key */
+  for (i = 0; i < 32; i++) {                           /* basic cycle start */
     sum += delta;
-    v0 += ((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>5) + k1);
-    v1 += ((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>5) + k3);
-  }                                              /* end cycle */
-  v[0]=v0; v[1]=v1;
+    v0 += ((v1 << 4) + k0) ^ (v1 + sum) ^ ((v1 >> 5) + k1);
+    v1 += ((v0 << 4) + k2) ^ (v0 + sum) ^ ((v0 >> 5) + k3);
+  } /* end cycle */
+  v[0] = v0;
+  v[1] = v1;
 }
 
-void decrypt (uint32_t v[2], const uint32_t k[4]) {
-  uint32_t v0=v[0], v1=v[1], sum=0xC6EF3720, i;  /* set up; sum is (delta << 5) & 0xFFFFFFFF */
-  uint32_t delta=0x9E3779B9;                     /* a key schedule constant */
-  uint32_t k0=k[0], k1=k[1], k2=k[2], k3=k[3];   /* cache key */
-  for (i=0; i<32; i++) {                         /* basic cycle start */
-    v1 -= ((v0<<4) + k2) ^ (v0 + sum) ^ ((v0>>5) + k3);
-    v0 -= ((v1<<4) + k0) ^ (v1 + sum) ^ ((v1>>5) + k1);
+void encryptBlockTEA(EncryptionBlock<64> block, const EncryptionKey<128> key) {
+  auto v = reinterpret_cast<std::uint32_t *>(block.data());
+  auto k = reinterpret_cast<std::uint32_t *>(key.data());
+  encryptBlockTEA_raw(v, k);
+}
+
+void decryptBlockTEA_raw(uint32_t v[2], const uint32_t k[4]) {
+  uint32_t v0 = v[0], v1 = v[1], sum = 0xC6EF3720,
+           i;                  /* set up; sum is (delta << 5) & 0xFFFFFFFF */
+  uint32_t delta = 0x9E3779B9; /* a key schedule constant */
+  uint32_t k0 = k[0], k1 = k[1], k2 = k[2], k3 = k[3]; /* cache key */
+  for (i = 0; i < 32; i++) {                           /* basic cycle start */
+    v1 -= ((v0 << 4) + k2) ^ (v0 + sum) ^ ((v0 >> 5) + k3);
+    v0 -= ((v1 << 4) + k0) ^ (v1 + sum) ^ ((v1 >> 5) + k1);
     sum -= delta;
-  }                                              /* end cycle */
-  v[0]=v0; v[1]=v1;
+  } /* end cycle */
+  v[0] = v0;
+  v[1] = v1;
+}
+
+void decryptBlockTEA(EncryptionBlock<64> block, const EncryptionKey<128> key) {
+  auto v = reinterpret_cast<std::uint32_t *>(block.data());
+  auto k = reinterpret_cast<std::uint32_t *>(key.data());
+  decryptBlockTEA_raw(v, k);
+}
+
+// no-side-effect variants
+// [leaving them commented out for now, I'm not sure they're entirely relevant]
+// std::array<byte_t, 8> getEncryptedBlockTEA(uint32_t v[2], const uint32_t
+// k[4]) {
+//   std::array<byte_t, 8> _v;
+//   std::uint32_t *v0 = reinterpret_cast<std::uint32_t*>(&(_v.at(0))), *v1 =
+//   reinterpret_cast<std::uint32_t*>(&(_v.at(4))); std::memcpy(v0, &v[0], 4);
+//   std::memcpy(v1, &v[1], 4);
+//   std::uint32_t sum = 0xC6EF3720,
+//            i;                  /* set up; sum is (delta << 5) & 0xFFFFFFFF */
+//   uint32_t delta = 0x9E3779B9; /* a key schedule constant */
+//   uint32_t k0 = k[0], k1 = k[1], k2 = k[2], k3 = k[3]; /* cache key */
+//   for (i = 0; i < 32; i++) {                           /* basic cycle start
+//   */
+//     (*v0) += (((*v1) << 4) + k0) ^ ((*v1) + sum) ^ (((*v1) >> 5) + k1);
+//     (*v1) += (((*v0) << 4) + k2) ^ ((*v0) + sum) ^ (((*v0) >> 5) + k3);
+//     sum += delta;
+//   } /* end cycle */
+//   return _v;
+// }
+
+// std::array<byte_t, 8> getDecryptedBlockTEA(uint32_t v[2], const uint32_t
+// k[4]) {
+//   std::array<byte_t, 8> _v;
+//   std::uint32_t *v0 = reinterpret_cast<std::uint32_t*>(&(_v.at(0))), *v1 =
+//   reinterpret_cast<std::uint32_t*>(&(_v.at(4))); std::memcpy(v0, &v[0], 4);
+//   std::memcpy(v1, &v[1], 4);
+//   std::uint32_t sum = 0xC6EF3720,
+//            i;                  /* set up; sum is (delta << 5) & 0xFFFFFFFF */
+//   uint32_t delta = 0x9E3779B9; /* a key schedule constant */
+//   uint32_t k0 = k[0], k1 = k[1], k2 = k[2], k3 = k[3]; /* cache key */
+//   for (i = 0; i < 32; i++) {                           /* basic cycle start
+//   */
+//     (*v1) -= (((*v0) << 4) + k2) ^ ((*v0) + sum) ^ (((*v0) >> 5) + k3);
+//     (*v0) -= (((*v1) << 4) + k0) ^ ((*v1) + sum) ^ (((*v1) >> 5) + k1);
+//     sum -= delta;
+//   } /* end cycle */
+//   return _v;
+// }
+
+void encryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
+                      EncryptionKey<128> ec_key) {
+  std::size_t i;
+  auto curr_block_ptr = reinterpret_cast<std::uint32_t *>(buffer);
+  for (i = 0; i <= buffer_sz - 8; i += 8) {
+    encryptBlockTEA_raw(reinterpret_cast<std::uint32_t *>(buffer),
+                        reinterpret_cast<std::uint32_t *>((ec_key.data())));
+    buffer += 64;
+  }
+  if (i > buffer_sz - 8) {
+    EncryptionBlock<64> end_with_padding{};
+    end_with_padding.set_to_zero();
+    std::memcpy(end_with_padding.data(), buffer, buffer_sz - i);
+    encryptBlockTEA(end_with_padding, ec_key);
+  }
+}
+
+void decryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
+                      EncryptionKey<128> ec_key) {
+  std::size_t i;
+  auto curr_block_ptr = reinterpret_cast<std::uint32_t *>(buffer);
+  for (i = 0; i <= buffer_sz - 8; i += 8) {
+    decryptBlockTEA_raw(reinterpret_cast<std::uint32_t *>(buffer),
+                        reinterpret_cast<std::uint32_t *>((ec_key.data())));
+    buffer += 64;
+  }
+  if (i > buffer_sz - 8) {
+    EncryptionBlock<64> end_with_padding{};
+    end_with_padding.set_to_zero();
+    std::memcpy(end_with_padding.data(), buffer, buffer_sz - i);
+    decryptBlockTEA(end_with_padding, ec_key);
+  }
+}
+
+std::string encryptString(const std::string some_string) {
+  return {};
 }
