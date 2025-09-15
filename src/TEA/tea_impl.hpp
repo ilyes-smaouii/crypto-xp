@@ -25,10 +25,10 @@ void decryptBlockTEA_raw(uint32_t v[2], const uint32_t k[4]);
 
 void decryptBlockTEA(EncryptionBlock<64> block, const EncryptionKey<128> key);
 
-void encryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
+void encryptBufferTEA(byte_t *buffer, const std::size_t buffer_sz,
                       EncryptionKey<128> ec_key);
 
-void decryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
+void decryptBufferTEA(byte_t *buffer, const std::size_t buffer_sz,
                       EncryptionKey<128> ec_key);
 
-std::string encryptString(std::string some_string);
+std::string encryptString(const std::string& some_string);

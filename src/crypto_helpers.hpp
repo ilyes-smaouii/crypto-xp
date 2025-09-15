@@ -2,11 +2,12 @@
 
 #include <array>
 #include <climits>
-#include <cstddef>
+// #include <cstddef>
 #include <cstring>
-#include <cstdint>
-#include <sys/stat.h>
-#include <time.h>
+// #include <cstdint>
+// #include <sys/stat.h>
+// #include <time.h>
+#include <string>
 
 using byte_t = std::uint8_t;
 
@@ -57,3 +58,7 @@ struct EncryptionBlock : public FIXED_SIZE_BUFFER<BLOCK_SIZE>{
     return FIXED_SIZE_BUFFER<BLOCK_SIZE>::get_buffer_size();
   }
 };
+
+std::size_t get_string_size_in_memory(const std::string& some_str);
+
+// TO-DO : add generic functions for encryption/decryption ?

@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <stdint.h>
 #include <string>
@@ -92,7 +93,7 @@ void decryptBlockTEA(EncryptionBlock<64> block, const EncryptionKey<128> key) {
 //   return _v;
 // }
 
-void encryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
+void encryptBufferTEA(byte_t *buffer, const std::size_t buffer_sz,
                       EncryptionKey<128> ec_key) {
   std::size_t i;
   auto curr_block_ptr = reinterpret_cast<std::uint32_t *>(buffer);
@@ -106,6 +107,8 @@ void encryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
     end_with_padding.set_to_zero();
     std::memcpy(end_with_padding.data(), buffer, buffer_sz - i);
     encryptBlockTEA(end_with_padding, ec_key);
+    // TO-DO ? (copy the other way around)
+    std::memcpy(buffer, end_with_padding.data(), buffer_sz - i);
   }
 }
 
@@ -123,9 +126,21 @@ void decryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
     end_with_padding.set_to_zero();
     std::memcpy(end_with_padding.data(), buffer, buffer_sz - i);
     decryptBlockTEA(end_with_padding, ec_key);
+    // TO-DO ? (copy the other way around)
+    std::memcpy(buffer, end_with_padding.data(), buffer_sz - i);
   }
 }
 
-std::string encryptString(const std::string some_string) {
-  return {};
+std::string encryptString(const std::string& some_string) {
+  const std::size_t buf_sz = get_string_size_in_memory(some_string) + 1;
+  // [alt 1]
+  auto buf = reinterpret_cast<byte_t*>(std::malloc(buf_sz));
+  std::memcpy(buf, some_string.c_str(), buf_sz - 1);
+  std::memset(reinterpret_cast<byte_t*>(buf) + buf_sz - 1, 0, 1);
+  // []
+  // [alt 2]
+  EncryptionKey<128> my_key{};
+  auto modifiable_c_str = const_cast<byte_t*>(reinterpret_cast<const byte_t*>(some_string.c_str()));
+  encryptBufferTEA(modifiable_c_str, buf_sz, my_key);
+  // []
 }
