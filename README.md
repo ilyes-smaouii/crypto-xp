@@ -21,3 +21,7 @@ If I find that code, which I wrote a few years ago, maybe I'll upload it to my G
 In the meantime, I'm focusing on other stuff.\
 Update : just took a quick look at TEA implementation, and it seems even simpler than I imagined, which
 is nice to start off easy.
+
+### 2025/09/16
+Wrote quite a bit of code already.
+TO-DO : clear up how I'm going to represent different number in memory (and byte order, most notably).

@@ -29,7 +29,7 @@ void encryptBlockTEA_raw(uint32_t v[2], const uint32_t k[4]) {
 
 void encryptBlockTEA(EncryptionBlock<64> block, const EncryptionKey<128> key) {
   auto v = reinterpret_cast<std::uint32_t *>(block.data());
-  auto k = reinterpret_cast<std::uint32_t *>(key.data());
+  auto k = reinterpret_cast<const std::uint32_t *>(key.data());
   encryptBlockTEA_raw(v, k);
 }
 
@@ -49,7 +49,7 @@ void decryptBlockTEA_raw(uint32_t v[2], const uint32_t k[4]) {
 
 void decryptBlockTEA(EncryptionBlock<64> block, const EncryptionKey<128> key) {
   auto v = reinterpret_cast<std::uint32_t *>(block.data());
-  auto k = reinterpret_cast<std::uint32_t *>(key.data());
+  auto k = reinterpret_cast<const std::uint32_t *>(key.data());
   decryptBlockTEA_raw(v, k);
 }
 
@@ -131,7 +131,7 @@ void decryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
   }
 }
 
-std::string encryptString(const std::string& some_string) {
+std::string encryptStringTEA(const std::string& some_string, const EncryptionKey<128>& my_key) {
   const std::size_t buf_sz = get_string_size_in_memory(some_string) + 1;
   // [alt 1]
   auto buf = reinterpret_cast<byte_t*>(std::malloc(buf_sz));
@@ -139,8 +139,8 @@ std::string encryptString(const std::string& some_string) {
   std::memset(reinterpret_cast<byte_t*>(buf) + buf_sz - 1, 0, 1);
   // []
   // [alt 2]
-  EncryptionKey<128> my_key{};
-  auto modifiable_c_str = const_cast<byte_t*>(reinterpret_cast<const byte_t*>(some_string.c_str()));
-  encryptBufferTEA(modifiable_c_str, buf_sz, my_key);
+  // auto modifiable_c_str = const_cast<byte_t*>(reinterpret_cast<const byte_t*>(some_string.c_str()));
+  encryptBufferTEA(buf, buf_sz - 1, my_key);
   // []
+  return std::string{reinterpret_cast<char *>(buf)};
 }

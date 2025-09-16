@@ -31,4 +31,4 @@ void encryptBufferTEA(byte_t *buffer, const std::size_t buffer_sz,
 void decryptBufferTEA(byte_t *buffer, const std::size_t buffer_sz,
                       EncryptionKey<128> ec_key);
 
-std::string encryptString(const std::string& some_string);
+std::string encryptStringTEA(const std::string& some_string, const EncryptionKey<128>& my_key);
