@@ -4,6 +4,7 @@ Will try to experiment with cryptography here.
 
 ## Ideas/things to explore
 - Tiny Encryption Algorithm
+- XXTEA ?
 - AES, DES, RSA, SHA, etc.
 - Different round counts
 - zero-knowledge proofs
