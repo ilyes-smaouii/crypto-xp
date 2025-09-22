@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <iterator>
 #include <stdint.h>
 #include <string>
 
@@ -97,18 +98,18 @@ void encryptBufferTEA(byte_t *buffer, const std::size_t buffer_sz,
                       EncryptionKey<128> ec_key) {
   std::size_t i;
   auto curr_block_ptr = reinterpret_cast<std::uint32_t *>(buffer);
-  for (i = 0; i <= buffer_sz - 8; i += 8) {
-    encryptBlockTEA_raw(reinterpret_cast<std::uint32_t *>(buffer),
+  for (; (byte_t *)(curr_block_ptr + 2) - buffer <= buffer_sz;
+       curr_block_ptr += 2) {
+    encryptBlockTEA_raw(reinterpret_cast<std::uint32_t *>(curr_block_ptr),
                         reinterpret_cast<std::uint32_t *>((ec_key.data())));
-    buffer += 64;
   }
-  if (i > buffer_sz - 8) {
+  if (i < buffer_sz) {
     EncryptionBlock<64> end_with_padding{};
     end_with_padding.set_to_zero();
-    std::memcpy(end_with_padding.data(), buffer, buffer_sz - i);
+    std::memcpy(end_with_padding.data(), curr_block_ptr, buffer_sz - i);
     encryptBlockTEA(end_with_padding, ec_key);
     // TO-DO ? (copy the other way around)
-    std::memcpy(buffer, end_with_padding.data(), buffer_sz - i);
+    std::memcpy(curr_block_ptr, end_with_padding.data(), buffer_sz - i);
   }
 }
 
@@ -119,9 +120,9 @@ void decryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
   for (i = 0; i <= buffer_sz - 8; i += 8) {
     decryptBlockTEA_raw(reinterpret_cast<std::uint32_t *>(buffer),
                         reinterpret_cast<std::uint32_t *>((ec_key.data())));
-    buffer += 64;
+    buffer += 2; // 2 * 32 = 64 bits = 8 bytes
   }
-  if (i > buffer_sz - 8) {
+  if (i < buffer_sz) {
     EncryptionBlock<64> end_with_padding{};
     end_with_padding.set_to_zero();
     std::memcpy(end_with_padding.data(), buffer, buffer_sz - i);
@@ -131,15 +132,18 @@ void decryptBufferTEA(byte_t *buffer, std::size_t buffer_sz,
   }
 }
 
-std::string encryptStringTEA(const std::string& some_string, const EncryptionKey<128>& my_key) {
-  const std::size_t buf_sz = get_string_size_in_memory(some_string) + 1;
+std::string encryptStringTEA(const std::string &some_string,
+                             const EncryptionKey<128> &my_key) {
+  const std::size_t buf_sz =
+      get_string_size_in_memory(some_string) + 1; // one byte for 0-termination
   // [alt 1]
-  auto buf = reinterpret_cast<byte_t*>(std::malloc(buf_sz));
+  auto buf = reinterpret_cast<byte_t *>(std::malloc(buf_sz));
   std::memcpy(buf, some_string.c_str(), buf_sz - 1);
-  std::memset(reinterpret_cast<byte_t*>(buf) + buf_sz - 1, 0, 1);
+  std::memset(reinterpret_cast<byte_t *>(buf) + buf_sz - 1, 0, 1);
   // []
   // [alt 2]
-  // auto modifiable_c_str = const_cast<byte_t*>(reinterpret_cast<const byte_t*>(some_string.c_str()));
+  // auto modifiable_c_str = const_cast<byte_t*>(reinterpret_cast<const
+  // byte_t*>(some_string.c_str()));
   encryptBufferTEA(buf, buf_sz - 1, my_key);
   // []
   return std::string{reinterpret_cast<char *>(buf)};
