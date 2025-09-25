@@ -2,46 +2,59 @@ cmake_minimum_required(VERSION 3.15)
 project(crypto-xp LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CPP_COMMON_SOURCE_DIR ../../cpp-common)
 
-# Create a library with shared crypto code
-add_library(cpp_common
-    ${CPP_COMMON_SOURCE_DIR}/misc.hpp
-    ${CPP_COMMON_SOURCE_DIR}/misc.cpp
-    ${CPP_COMMON_SOURCE_DIR}/common-common.hpp
-    ${CPP_COMMON_SOURCE_DIR}/logging.hpp
+# --- Library: cpp_common ---
+file(GLOB CPP_COMMON_SOURCES
+    ${CPP_COMMON_SOURCE_DIR}/*.cpp
+    ${CPP_COMMON_SOURCE_DIR}/*.hpp
 )
 
+add_library(cpp_common ${CPP_COMMON_SOURCES})
+
+
+target_include_directories(cpp_common PUBLIC
+    ${CPP_COMMON_SOURCE_DIR}
+)
+
+# --- Library: crypto_helpers ---
 add_library(crypto_helpers
-    crypto_helpers.hpp
     crypto_helpers.cpp
 )
 
+target_include_directories(crypto_helpers PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# crypto_helpers needs cpp_common
+target_link_libraries(crypto_helpers PUBLIC cpp_common)
+
+# --- Library: crypto_tea ---
 add_library(crypto_tea
-    tea/tea_impl.hpp
     tea/tea_impl.cpp
 )
 
-# target_include_directories(tea_testing PUBLIC
-#     ${CPP_COMMON_SOURCE_DIR}
-#     ${CMAKE_CURRENT_SOURCE_DIR}
-#     ${CMAKE_CURRENT_SOURCE_DIR}/TEA
-# )
-
-# include_directories(${CPP_COMMON_SOURCE_DIR})
-# link_directories(${CPP_COMMON_SOURCE_DIR})
-
-# Main program
-add_executable(first_one
-    first_one.cpp
-    )
-
-target_link_libraries(first_one PRIVATE crypto_helpers cpp_common)
-
-# Test program
-add_executable(tea_testing
-testing/tea_testing.cpp
+target_include_directories(crypto_tea PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/tea
 )
 
-target_link_libraries(tea_testing PRIVATE crypto_helpers cpp_common crypto_tea)
+# crypto_tea needs crypto_helpers (and transitively cpp_common)
+target_link_libraries(crypto_tea PUBLIC crypto_helpers)
+
+# --- Executable: first_one ---
+add_executable(first_one
+    first_one.cpp
+)
+
+# depends only on helpers (which pull cpp_common automatically)
+target_link_libraries(first_one PRIVATE crypto_helpers)
+
+# --- Executable: tea_testing ---
+add_executable(tea_testing
+    testing/tea_testing.cpp
+)
+
+# only link tea (which already pulls helpers + common)
+target_link_libraries(tea_testing PRIVATE crypto_tea)
