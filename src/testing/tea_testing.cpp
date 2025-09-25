@@ -10,4 +10,5 @@ int main(int argc, char *argv[]) {
   std::array<byte_t, 16> key_arr{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
   // EncryptionKey<128> some_key_2{key_arr};
   std::cout << encryptStringTEA(some_str, some_key) << std::endl;
+  std::cout << decryptStringTEA(encryptStringTEA(some_str, some_key), some_key) << std::endl;
 }

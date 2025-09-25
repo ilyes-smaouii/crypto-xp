@@ -15,7 +15,7 @@
 */
 void encryptBlockTEA_raw(uint32_t v[2], const uint32_t k[4]);
 
-void encryptBlockTEA(EncryptionBlock<64> block, const EncryptionKey<128> key);
+void encryptBlockTEA(EncryptionBlock<64> &block, const EncryptionKey<128> &key);
 
 /*
   Arguments : 64-bit block "v" to decrypt, 128-bit key "k"
@@ -23,12 +23,19 @@ void encryptBlockTEA(EncryptionBlock<64> block, const EncryptionKey<128> key);
 */
 void decryptBlockTEA_raw(uint32_t v[2], const uint32_t k[4]);
 
-void decryptBlockTEA(EncryptionBlock<64> block, const EncryptionKey<128> key);
+void decryptBlockTEA(EncryptionBlock<64> &block, const EncryptionKey<128> &key);
 
+/*
+ * buffer_sz : size in bytes
+ */
 void encryptBufferTEA(byte_t *buffer, const std::size_t buffer_sz,
                       EncryptionKey<128> ec_key);
 
 void decryptBufferTEA(byte_t *buffer, const std::size_t buffer_sz,
                       EncryptionKey<128> ec_key);
 
-std::string encryptStringTEA(const std::string& some_string, const EncryptionKey<128>& my_key);
+std::string encryptStringTEA(const std::string &some_string,
+                             const EncryptionKey<128> &my_key);
+
+std::string decryptStringTEA(const std::string &some_string,
+                             const EncryptionKey<128> &my_key);
