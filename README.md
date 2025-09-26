@@ -24,5 +24,14 @@ Update : just took a quick look at TEA implementation, and it seems even simpler
 is nice to start off easy.
 
 ### 2025/09/16
-Wrote quite a bit of code already.
+Wrote quite a bit of code already.\
 TO-DO : clear up how I'm going to represent different number in memory (and byte order, most notably).
+
+### 2025/09/26
+Got a - seemingly - working implementation for TEA, and I'm now seeing a bit more clearly how I can make
+some of my code more generic.\
+Also added a `CMakeLists.txt` file to make building/running easier.\
+TO-DO : make current code more generic.\
+After that, I'll probably move on to another algorithm. Also, now that I think of it, I could try
+to implement something more concrete/fun to test my algorithms, such as a messaging app or something,
+rather than just write tests each time. Anyway, we'll see.
