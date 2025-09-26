@@ -157,3 +157,5 @@ std::string decryptStringTEA(const std::string &some_string,
   auto res = std::string{buf.dataAs<char *>()};
   return res;
 }
+
+// TO-DO : use crypto_helpers' generic functions once they're implemented

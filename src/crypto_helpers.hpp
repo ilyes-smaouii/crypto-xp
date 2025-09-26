@@ -14,6 +14,8 @@
 // #include <time.h>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+// #include <type_traits>
 
 using byte_t = std::uint8_t;
 
@@ -104,6 +106,20 @@ struct EncryptionBlock : public FIXED_SIZE_BUFFER<BLOCK_SIZE> {
     return FIXED_SIZE_BUFFER<BLOCK_SIZE>::get_buffer_size();
   }
 };
+
+/*
+ * Concept for ciphering algorithms that can work on fixed-size blocks and keys
+ */
+template <typename CryptoAlgo>
+concept UsableAsBlockAlgo = requires(CryptoAlgo algo) {
+  { CryptoAlgo::getBlockSize() } -> std::same_as<std::size_t>;
+  { CryptoAlgo::getKeySize() } -> std::same_as<std::size_t>;
+  // TO-DO : other stuff to add in here
+  // [encryption/decryption on block]
+};
+
+// TO-DO : block algo on buffer
+// TO-DO : block algo on string
 
 std::size_t get_string_size_in_memory(const std::string &some_str);
 

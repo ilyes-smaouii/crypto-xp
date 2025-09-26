@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[]) {
   std::string some_str{argv[1]};
-  std::array<byte_t, 16> key_arr{0x21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  std::array<byte_t, 16> key_arr{0x21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x3c};
   EncryptionKey<128> some_key{key_arr};
   // EncryptionKey<128> some_key_2{key_arr};
   auto encrypted_str = encryptStringTEA(some_str, some_key);
