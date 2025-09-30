@@ -16,7 +16,7 @@ add_library(cpp_common ${CPP_COMMON_SOURCES})
 
 
 target_include_directories(cpp_common PUBLIC
-    ${CPP_COMMON_SOURCE_DIR}
+    ${CPP_COMMON_SOURCE_DIR}/..
 )
 
 # --- Library: crypto_helpers ---
@@ -40,16 +40,26 @@ target_include_directories(crypto_tea PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/tea
 )
 
-# crypto_tea needs crypto_helpers (and transitively cpp_common)
+#
+# CRYPTO_STRUCT
+#
+
 target_link_libraries(crypto_tea PUBLIC crypto_helpers)
 
-# --- Executable: first_one ---
-add_executable(first_one
-    first_one.cpp
+add_library(tea_struct
+tea/tea_struct.cpp
 )
 
-# depends only on helpers (which pull cpp_common automatically)
-target_link_libraries(first_one PRIVATE crypto_helpers)
+target_include_directories(tea_struct PUBLIC
+${CMAKE_CURRENT_SOURCE_DIR}/tea
+)
+
+target_link_libraries(tea_struct PUBLIC crypto_helpers)
+
+#
+# /CRYPTO_STRUCT
+#
+
 
 # --- Executable: tea_testing ---
 add_executable(tea_testing

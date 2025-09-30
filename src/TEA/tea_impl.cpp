@@ -132,7 +132,7 @@ std::string encryptStringTEA(const std::string &some_string,
        BLOCK_SIZE_TEA_BYTES); // one byte for 0-termination
   // [alt 1]
   // auto buf = reinterpret_cast<byte_t *>(std::calloc(buf_sz, 1));
-  auto buf = HLP::Misc::my_buffer{buf_sz + 1};
+  auto buf = HLP::Misc::my_shared_buffer{buf_sz + 1};
   std::memcpy(buf.data(), some_string.c_str(), buf_sz);
   encryptBufferTEA(buf.data(), buf_sz, my_key);
   // []
@@ -150,7 +150,7 @@ std::string decryptStringTEA(const std::string &some_string,
        BLOCK_SIZE_TEA_BYTES); // one byte for 0-termination
   // [alt 1]
   // auto buf = reinterpret_cast<byte_t *>(std::calloc(buf_sz, 1));
-  auto buf = HLP::Misc::my_buffer{buf_sz + 1};
+  auto buf = HLP::Misc::my_shared_buffer{buf_sz + 1};
   std::memcpy(buf.data(), some_string.c_str(), buf_sz);
   decryptBufferTEA(buf.data(), buf_sz, my_key);
   // []
