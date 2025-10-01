@@ -2,6 +2,13 @@
 ## Intro/context
 Will try to experiment with cryptography here.
 
+## File organization
+- `src/` : contains source code
+  - `*.cpp`, `*.hpp` : common code
+  - `TEA/` : contains code to implement TEA specifically
+  - `old/` : contains old code that's not used anymore (e.g. because it's been replaced with better code)
+- `README.md` : file with useful information for future reader
+
 ## Ideas/things to explore
 - Tiny Encryption Algorithm
 - XXTEA ?
@@ -35,3 +42,10 @@ TO-DO : make current code more generic.\
 After that, I'll probably move on to another algorithm. Also, now that I think of it, I could try
 to implement something more concrete/fun to test my algorithms, such as a messaging app or something,
 rather than just write tests each time. Anyway, we'll see.
+
+### 2025/10/01
+Genericity has been implemented, and seems to work (for TEA, anyway).\
+If my work has been done correctly, and I want to use another "block-type" algorithm, I'll just need
+to create the corresponding struct and implement its `encryptBlockRaw()`/`decryptBlockRaw()` functions,
+and I'll be able to use it directly on buffers and strings, and in whatevers applications I code in
+the future (encrypted messaging app ?).
