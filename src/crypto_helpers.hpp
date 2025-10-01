@@ -62,14 +62,11 @@ template <size_t KEY_SIZE>
 struct EncryptionKey : public FIXED_SIZE_DATASPAN<KEY_SIZE> {
   using FIXED_SIZE_DATASPAN<KEY_SIZE>::BYTE_COUNT;
   using parent_t = FIXED_SIZE_DATASPAN<KEY_SIZE>;
-  
 
-  EncryptionKey(const EncryptionKey<KEY_SIZE>& other_key) = default;
+  EncryptionKey(const EncryptionKey<KEY_SIZE> &other_key) = default;
 
-  EncryptionKey() {
-    this->set_to_zero();
-  }
-  
+  EncryptionKey() { this->set_to_zero(); }
+
   EncryptionKey(const std::array<byte_t, BYTE_COUNT> &val_array) {
     this->_data = val_array;
   }
@@ -119,7 +116,8 @@ template <typename CryptoAlgo>
 concept UsableAsBlockAlgo =
     requires(CryptoAlgo algo,
              //  EncryptionBlock<CryptoAlgo::getBlockSize()> &data_block,
-             HLP::Misc::my_shared_buffer shared_buf,
+             byte_t *buf_data,
+             /* HLP::Misc::my_shared_buffer shared_buf, */
              const EncryptionKey<CryptoAlgo::getKeySize()> &ec_key,
              byte_t *ec_key_raw) {
       algo = CryptoAlgo{ec_key};
@@ -134,15 +132,23 @@ concept UsableAsBlockAlgo =
       algo.setKey(ec_key);
       {
         algo.getKey()
-      } -> std::same_as<EncryptionKey<CryptoAlgo::getKeySize()>>;
+      } -> std::same_as<const EncryptionKey<CryptoAlgo::getKeySize()> &>;
       /*
        * Encrypts block using given key
        */
-      CryptoAlgo::encryptBlockRaw(shared_buf, ec_key);
+      { CryptoAlgo::encryptBlockRaw(buf_data, ec_key) } -> std::same_as<void>;
       /*
        * State-less alternative
        */
-      algo.encryptBlockRaw(shared_buf);
+      { algo.encryptBlockRaw(buf_data) } -> std::same_as<void>;
+      /*
+       * Decrypts block using given key
+       */
+      { CryptoAlgo::decryptBlockRaw(buf_data, ec_key) } -> std::same_as<void>;
+      /*
+       * State-less alternative
+       */
+      { algo.decryptBlockRaw(buf_data) } -> std::same_as<void>;
     };
 
 /*
@@ -152,12 +158,13 @@ concept UsableAsBlockAlgo =
 std::size_t get_string_size_in_memory(const std::string &some_str);
 
 // TO-DO : add generic functions for encryption/decryption ?
-template <typename CryptoAlgo, std::size_t KEY_SIZE>
-void encryptBuffer(CryptoAlgo my_algo, byte_t *buf_data, std::size_t buf_len,
-                   const EncryptionKey<KEY_SIZE> &my_key)
+template <typename CryptoAlgo>
+void encryptBuffer(const CryptoAlgo &my_algo,
+                   HLP::Misc::my_shared_buffer shared_buf)
   requires UsableAsBlockAlgo<CryptoAlgo>
 {
-
+  auto &my_key = my_algo.getKey();
+  auto buf_len = shared_buf.getSize();
   constexpr std::size_t BLOCK_SIZE_BYTES = CryptoAlgo::getBlockSize() / 8;
   if (buf_len % BLOCK_SIZE_BYTES) {
     throw std::runtime_error(
@@ -167,13 +174,97 @@ void encryptBuffer(CryptoAlgo my_algo, byte_t *buf_data, std::size_t buf_len,
   std::size_t curr_byte{0};
   for (; curr_byte + BLOCK_SIZE_BYTES <= buf_len;
        curr_byte += BLOCK_SIZE_BYTES) {
-    my_algo.encryptBlockRaw(buf_data + curr_byte, my_key.data());
+    my_algo.encryptBlockRaw(shared_buf.getNthBytePtr(curr_byte), my_key);
   }
 }
 
 template <typename CryptoAlgo, std::size_t KEY_SIZE>
+void encryptBuffer(HLP::Misc::my_shared_buffer shared_buf,
+                   const EncryptionKey<KEY_SIZE> &my_key)
+  requires UsableAsBlockAlgo<CryptoAlgo>
+{
+  static_assert(KEY_SIZE == CryptoAlgo::getKeySize(),
+                "encryptBuffer() error : key size from argument inconsistent "
+                "with key size from algo !");
+  constexpr std::size_t BLOCK_SIZE_BYTES = CryptoAlgo::getBlockSize() / 8;
+  auto buf_len = shared_buf.getSize();
+  if (buf_len % BLOCK_SIZE_BYTES) {
+    throw std::runtime_error(
+        "Algorithm can only work on buffer of sizes that are multiple of 8 !");
+  }
+
+  std::size_t curr_byte{0};
+  for (; curr_byte + BLOCK_SIZE_BYTES <= buf_len;
+       curr_byte += BLOCK_SIZE_BYTES) {
+    CryptoAlgo::encryptBlockRaw(shared_buf.getNthBytePtr(curr_byte), my_key);
+  }
+}
+
+template <typename CryptoAlgo>
+void decryptBuffer(const CryptoAlgo &my_algo,
+                   HLP::Misc::my_shared_buffer shared_buf)
+  requires UsableAsBlockAlgo<CryptoAlgo>
+{
+  auto &my_key = my_algo.getKey();
+  auto buf_len = shared_buf.getSize();
+  constexpr std::size_t BLOCK_SIZE_BYTES = CryptoAlgo::getBlockSize() / 8;
+  if (buf_len % BLOCK_SIZE_BYTES) {
+    throw std::runtime_error(
+        "Algorithm can only work on buffer of sizes that are multiple of 8 !");
+  }
+
+  std::size_t curr_byte{0};
+  for (; curr_byte + BLOCK_SIZE_BYTES <= buf_len;
+       curr_byte += BLOCK_SIZE_BYTES) {
+    my_algo.decryptBlockRaw(shared_buf.getNthBytePtr(curr_byte), my_key);
+  }
+}
+
+template <typename CryptoAlgo, std::size_t KEY_SIZE>
+void decryptBuffer(HLP::Misc::my_shared_buffer shared_buf,
+                   const EncryptionKey<KEY_SIZE> &my_key)
+  requires UsableAsBlockAlgo<CryptoAlgo>
+{
+  static_assert(KEY_SIZE == CryptoAlgo::getKeySize(),
+                "decryptBuffer() error : key size from argument inconsistent "
+                "with key size from algo !");
+  constexpr std::size_t BLOCK_SIZE_BYTES = CryptoAlgo::getBlockSize() / 8;
+  auto buf_len = shared_buf.getSize();
+  if (buf_len % BLOCK_SIZE_BYTES) {
+    throw std::runtime_error(
+        "Algorithm can only work on buffer of sizes that are multiple of 8 !");
+  }
+
+  std::size_t curr_byte{0};
+  for (; curr_byte + BLOCK_SIZE_BYTES <= buf_len;
+       curr_byte += BLOCK_SIZE_BYTES) {
+    CryptoAlgo::decryptBlockRaw(shared_buf.getNthBytePtr(curr_byte), my_key);
+  }
+}
+
+template <typename CryptoAlgo>
 std::string getEncryptedString(CryptoAlgo my_algo,
-                               const std::string &some_string,
+                               const std::string &some_string)
+  requires UsableAsBlockAlgo<CryptoAlgo>
+{
+  constexpr std::size_t BLOCK_SIZE_BYTES = CryptoAlgo::getBlockSize() / 8;
+
+  auto &my_key = my_algo.getKey();
+
+  const std::size_t buf_sz =
+      BLOCK_SIZE_BYTES *
+      ((get_string_size_in_memory(some_string) + BLOCK_SIZE_BYTES - 1) /
+       BLOCK_SIZE_BYTES); // one byte for 0-termination
+  // auto buf = reinterpret_cast<byte_t *>(std::calloc(buf_sz, 1));
+  auto shared_buf = HLP::Misc::my_shared_buffer{buf_sz};
+  std::memcpy(shared_buf.data(), some_string.c_str(), buf_sz);
+  encryptBuffer(my_algo, shared_buf);
+  return HLP::Misc::construct_string_with_max_len(shared_buf.dataAs<char *>(),
+                                                  buf_sz);
+}
+
+template <typename CryptoAlgo, std::size_t KEY_SIZE>
+std::string getEncryptedString(const std::string &some_string,
                                const EncryptionKey<KEY_SIZE> &my_key)
   requires UsableAsBlockAlgo<CryptoAlgo>
 {
@@ -184,9 +275,49 @@ std::string getEncryptedString(CryptoAlgo my_algo,
       ((get_string_size_in_memory(some_string) + BLOCK_SIZE_BYTES - 1) /
        BLOCK_SIZE_BYTES); // one byte for 0-termination
   // auto buf = reinterpret_cast<byte_t *>(std::calloc(buf_sz, 1));
-  auto buf = HLP::Misc::my_shared_buffer{buf_sz + 1};
-  std::memcpy(buf.data(), some_string.c_str(), buf_sz);
-  encryptBuffer(my_algo, buf.data(), buf_sz, my_key);
-  auto res = std::string{buf.dataAs<char *>()};
-  return res;
+  auto shared_buf = HLP::Misc::my_shared_buffer{buf_sz};
+  std::memcpy(shared_buf.data(), some_string.c_str(), buf_sz);
+  CryptoAlgo::encryptBuffer(shared_buf, my_key);
+  return HLP::Misc::construct_string_with_max_len(shared_buf.dataAs<char *>(),
+                                                  buf_sz);
+}
+
+template <typename CryptoAlgo>
+std::string getDecryptedString(CryptoAlgo my_algo,
+                               const std::string &some_string)
+  requires UsableAsBlockAlgo<CryptoAlgo>
+{
+  constexpr std::size_t BLOCK_SIZE_BYTES = CryptoAlgo::getBlockSize() / 8;
+
+  auto &my_key = my_algo.getKey();
+
+  const std::size_t buf_sz =
+      BLOCK_SIZE_BYTES *
+      ((get_string_size_in_memory(some_string) + BLOCK_SIZE_BYTES - 1) /
+       BLOCK_SIZE_BYTES); // one byte for 0-termination
+  // auto buf = reinterpret_cast<byte_t *>(std::calloc(buf_sz, 1));
+  auto shared_buf = HLP::Misc::my_shared_buffer{buf_sz};
+  std::memcpy(shared_buf.data(), some_string.c_str(), buf_sz);
+  decryptBuffer(my_algo, shared_buf);
+  return HLP::Misc::construct_string_with_max_len(shared_buf.dataAs<char *>(),
+                                                  buf_sz);
+}
+
+template <typename CryptoAlgo, std::size_t KEY_SIZE>
+std::string getDecryptedString(const std::string &some_string,
+                               const EncryptionKey<KEY_SIZE> &my_key)
+  requires UsableAsBlockAlgo<CryptoAlgo>
+{
+  constexpr std::size_t BLOCK_SIZE_BYTES = CryptoAlgo::getBlockSize() / 8;
+
+  const std::size_t buf_sz =
+      BLOCK_SIZE_BYTES *
+      ((get_string_size_in_memory(some_string) + BLOCK_SIZE_BYTES - 1) /
+       BLOCK_SIZE_BYTES); // one byte for 0-termination
+  // auto buf = reinterpret_cast<byte_t *>(std::calloc(buf_sz, 1));
+  auto shared_buf = HLP::Misc::my_shared_buffer{buf_sz};
+  std::memcpy(shared_buf.data(), some_string.c_str(), buf_sz);
+  CryptoAlgo::decryptBuffer(shared_buf, my_key);
+  return HLP::Misc::construct_string_with_max_len(shared_buf.dataAs<char *>(),
+                                                  buf_sz);
 }

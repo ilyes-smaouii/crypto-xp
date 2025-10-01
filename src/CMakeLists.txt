@@ -68,3 +68,11 @@ add_executable(tea_testing
 
 # only link tea (which already pulls helpers + common)
 target_link_libraries(tea_testing PRIVATE crypto_tea)
+
+# --- Executable: tea_testing2 ---
+add_executable(tea_testing2
+    testing/tea_testing2.cpp
+)
+
+# only link tea (which already pulls helpers + common)
+target_link_libraries(tea_testing2 PRIVATE tea_struct)
