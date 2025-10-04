@@ -16,6 +16,7 @@ Will try to experiment with cryptography here.
 - Different round counts
 - zero-knowledge proofs
 - post-quantum cryptography
+\
 Things to try : messages with signature, end-to-end encryption, checksums, etc.
 
 ## Journal/misc
