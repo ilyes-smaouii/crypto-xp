@@ -23,13 +23,13 @@ int main(int argc, char *argv[]) {
                            decrypted_str.length())
             << std::endl;
 
-  // auto encrypted_str_2 = getEncryptedString<TEABlockAlgo>(some_str, some_key);
-  // auto decrypted_str_2 =
-  //     getDecryptedString<TEABlockAlgo>(encrypted_str_2, some_key);
-  // std::cout << std::format("encrypted_str_2 : {} (length {})", encrypted_str_2,
-  //                          encrypted_str_2.length())
-  //           << std::endl;
-  // std::cout << std::format("decrypted_str_2 : {} (length {})", decrypted_str_2,
-  //                          decrypted_str_2.length())
-  //           << std::endl;
+  auto encrypted_str_2 = getEncryptedString<TEABlockAlgo>(some_str, some_key);
+  auto decrypted_str_2 =
+      getDecryptedString<TEABlockAlgo>(encrypted_str_2, some_key);
+  std::cout << std::format("encrypted_str_2 : {} (length {})", encrypted_str_2,
+                           encrypted_str_2.length())
+            << std::endl;
+  std::cout << std::format("decrypted_str_2 : {} (length {})", decrypted_str_2,
+                           decrypted_str_2.length())
+            << std::endl;
 }
