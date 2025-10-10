@@ -1,0 +1,8 @@
+CompileFlags:
+  Remove: [-std=*]
+  Add:
+    - -std=c++20
+    # - --query-driver=C:/msys64/usr/bin/c++.exe
+Hover:
+  ShowAKA: true
+  MacroContentsLimit: 2048
