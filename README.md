@@ -48,5 +48,5 @@ rather than just write tests each time. Anyway, we'll see.
 Genericity has been implemented, and seems to work (for TEA, anyway).\
 If my work has been done correctly, and I want to use another "block-type" algorithm, I'll just need
 to create the corresponding struct and implement its `encryptBlockRaw()`/`decryptBlockRaw()` functions,
-and I'll be able to use it directly on buffers and strings, and in whatevers applications I code in
+and I'll be able to use it directly on buffers and strings, and in whatever applications I code in
 the future (encrypted messaging app ?).
